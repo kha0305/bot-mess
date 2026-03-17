@@ -10,6 +10,7 @@ import {
 import { collectReplyIds, normalizeId, sameIdSet } from "./idUtils.js";
 
 const RENT_BYPASS_COMMANDS = new Set(["rentadd", "checkrent", "admin", "ban", "unban"]);
+const ADMIN_ONLY_BYPASS_COMMANDS = new Set(["admin", "checkrent"]);
 const VERBOSE_MESSAGE_LOG = String(process.env.BOT_VERBOSE_MESSAGE_LOG || "").toLowerCase() === "true";
 const RESOLVE_SENDER_NAME_LOG = String(process.env.BOT_LOG_RESOLVE_SENDER_NAME || "").toLowerCase() === "true";
 const BOT_DETAILED_LOG = String(process.env.BOT_DETAILED_LOG || "true").toLowerCase() !== "false";
@@ -542,6 +543,23 @@ export function createMessageHandler({
           await replyBot("⚠️ Nhóm đang BẬT chế độ QTVONLY. Chỉ Quản Trị Viên (Bot) mới có quyền sử dụng Bot lúc này!");
           return;
         }
+      }
+
+      const isAdminOnly = !!threadData.adminOnly;
+      if (
+        isAdminOnly &&
+        !roleState.isNdh &&
+        !roleState.isAdmin &&
+        !roleState.isSuper &&
+        !ADMIN_ONLY_BYPASS_COMMANDS.has(commandName)
+      ) {
+        traceLog("command.blocked.admin_only", {
+          command: commandName,
+          senderId: message.senderId,
+          threadId: message.threadId,
+        });
+        await replyBot("⚠️ Nhóm đang BẬT chế độ ADMIN ONLY. Chỉ NDH/Admin/Super mới có quyền dùng bot.");
+        return;
       }
 
       const cooldownSeconds = getCommandCooldownSeconds(commandToExec);
