@@ -1,0 +1,19 @@
+node_modules/
+.env
+
+# Runtime/session files
+cookies.json
+device.json
+e2ee_device.json
+data/**
+!data/.gitkeep
+
+# Temp/log
+tmp-start.log
+tmp-start-after.log
+*.tmp
+
+# Local packaging artifacts
+_dist/
+*.zip
+*.rar
