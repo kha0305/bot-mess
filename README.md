@@ -1,55 +1,80 @@
 # Bot Messenger (meta-messenger.js)
 
-Bot Messenger chạy bằng `meta-messenger.js`, hỗ trợ command runtime, quản trị nhóm, game/tài chính, media (nhạc/video), AI (text + vision), backup dữ liệu tự động, và cơ chế reconnect ổn định.
+[![Node](https://img.shields.io/badge/node-%3E%3D20-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Repo](https://img.shields.io/badge/repo-kha0305%2Fbot--mess-181717?logo=github)](https://github.com/kha0305/bot-mess)
+![Top Language](https://img.shields.io/github/languages/top/kha0305/bot-mess)
+![Last Commit](https://img.shields.io/github/last-commit/kha0305/bot-mess)
+![Stars](https://img.shields.io/github/stars/kha0305/bot-mess?style=social)
+
+Bot Messenger chạy bằng `meta-messenger.js`, hỗ trợ command runtime, quản trị nhóm, game/tài chính, media (nhạc/video), AI (text + vision), backup dữ liệu tự động và cơ chế reconnect ổn định.
+
+## Mục lục
+
+- [Tác giả](#tác-giả)
+- [Kiến trúc tổng quan](#kiến-trúc-tổng-quan)
+- [Tính năng chính](#tính-năng-chính)
+- [Yêu cầu hệ thống](#yêu-cầu-hệ-thống)
+- [Cài đặt nhanh](#cài-đặt-nhanh)
+- [Cấu hình bắt buộc](#cấu-hình-bắt-buộc)
+- [Biến môi trường](#biến-môi-trường)
+- [Danh sách lệnh](#danh-sách-lệnh)
+- [Scripts npm](#scripts-npm)
+- [Backup và Restore](#backup-và-restore)
+- [Cấu trúc thư mục](#cấu-trúc-thư-mục)
+- [Bảo mật và chia sẻ mã nguồn](#bảo-mật-và-chia-sẻ-mã-nguồn)
+- [Changelog và release](#changelog-và-release)
+- [Nguồn tham khảo](#nguồn-tham-khảo)
+- [Ghi chú bản quyền](#ghi-chú-bản-quyền)
 
 ## Tác giả
 
 - Tác giả chính: **Bảo Kha**
 - GitHub: [kha0305](https://github.com/kha0305)
-- Repo: [https://github.com/kha0305/bot-mess](https://github.com/kha0305/bot-mess)
+- Repo chính thức: [https://github.com/kha0305/bot-mess](https://github.com/kha0305/bot-mess)
+
+## Kiến trúc tổng quan
+
+```mermaid
+flowchart LR
+  A[Messenger Event] --> B[runtime.js]
+  B --> C[messageHandler.js]
+  C --> D[commands/*.js]
+  C --> E[coreBridge -> utils/commands/*.cjs]
+  D --> F[db.js]
+  D --> G[interactionDb.js]
+  F --> H[(data/database.sqlite)]
+  F --> I[data/users.json + rent_data.json]
+  B --> J[backupManager.js]
+  J --> K[data/backups/]
+```
 
 ## Tính năng chính
 
 - Framework command ESM (`commands/*.js`) + bridge command legacy CJS (`utils/commands/*.cjs`).
-- Kết nối Messenger có watchdog/retry/reconnect tự động.
 - Hỗ trợ cả luồng thường và E2EE (`message`, `e2eeMessage`, reaction...).
-- Lưu dữ liệu bằng SQLite + JSON mirror:
-  - `data/database.sqlite`
-  - `data/rent_data.json`
-  - `data/users.json`
-- Backup dữ liệu tự động theo giờ/ngày, có script restore snapshot.
-- Bộ command phong phú:
-  - Thông tin/tiện ích: `menu`, `help`, `ping`, `info`, `uid`, `math`, `uptime`, `check`...
-  - Tài chính/game: `daily`, `balance`, `pay`, `vay`, `work`, `cave`, `tx`, `roll`...
-  - Media: `sing`, `video`, `pinterest`, `vd`, `gái`.
-  - Quản trị nhóm: `add`, `del`, `qtv`, `qtvonly`, `rename`, `autosend`, `chuiadmin`.
-  - Hệ thống/admin: `load`, `reset`, `db`, `ban`, `unban`, `admin`, `note`.
+- Auto reconnect với watchdog + retry khi mạng chập chờn.
+- Lưu dữ liệu bền với SQLite + JSON mirror.
+- Backup dữ liệu theo giờ/ngày và có script restore.
+- Tích hợp command AI/vision, tải nhạc/video, game, quản trị nhóm.
 
 ## Yêu cầu hệ thống
 
-- Node.js: khuyến nghị **Node 20 LTS** (project hiện cũng chạy được trên môi trường Node mới).
-- OS: Windows/Linux đều chạy được, nhưng một số luồng AI local đang tối ưu cho Windows path.
-- Có internet ổn định để bot kết nối Messenger và các API ngoài.
+- Node.js: khuyến nghị **Node 20 LTS**.
+- Hệ điều hành: Windows/Linux.
+- Internet ổn định để kết nối Messenger và API ngoài.
 
 ## Cài đặt nhanh
 
 ```bash
 npm install
-```
-
-Chạy bot:
-
-```bash
 npm start
 ```
 
 ## Cấu hình bắt buộc
 
-Bot cần file cookie hợp lệ:
+Bot cần cookie hợp lệ trong `data/cookies.json`.
 
-- `data/cookies.json`
-
-Tối thiểu cần `c_user` và `xs`:
+Mẫu tối thiểu:
 
 ```json
 [
@@ -58,11 +83,11 @@ Tối thiểu cần `c_user` và `xs`:
 ]
 ```
 
-Khuyến nghị thêm cookie `datr`, `fr`, `sb`, `wd` để ổn định hơn.
+Khuyến nghị có thêm `datr`, `fr`, `sb`, `wd` để ổn định hơn.
 
 ## Biến môi trường
 
-Không bắt buộc phải có `.env`, bạn có thể set trực tiếp trong môi trường chạy.
+Bạn có thể cấu hình trực tiếp trên môi trường chạy hoặc qua `.env` (nếu tự nạp).
 
 ### Quyền global bot
 
@@ -70,9 +95,9 @@ Không bắt buộc phải có `.env`, bạn có thể set trực tiếp trong m
 - `BOT_ADMINS`
 - `BOT_NDH`
 
-Định dạng: danh sách ID phân tách bằng dấu phẩy.
+Định dạng: danh sách UID ngăn cách bởi dấu phẩy.
 
-### Logging / kết nối
+### Logging và kết nối
 
 - `BOT_DETAILED_LOG` (mặc định `true`)
 - `BOT_TRACE_MAX_TEXT`
@@ -91,7 +116,7 @@ Không bắt buộc phải có `.env`, bạn có thể set trực tiếp trong m
 - `DATA_BACKUP_KEEP_DAILY`
 - `DATA_BACKUP_TZ` (mặc định `Asia/Ho_Chi_Minh`)
 
-### AI / Media
+### AI và media
 
 - `PICOCLAW_PATH`
 - `NOTE_BASE_URL`
@@ -114,22 +139,44 @@ Không bắt buộc phải có `.env`, bạn có thể set trực tiếp trong m
 - `PAYOS_CHECKSUM_KEY`
 - `PAYOS_PORT`
 
-### Core DB sync flags (legacy)
+### Core sync (legacy)
 
 - `FORCE_SYNC`
 - `ALTER_SYNC`
 - `FALLBACK_FORCE`
 - `CHECKTT_CHART_ENABLED`
 
+## Danh sách lệnh
+
+### Tiện ích / thông tin
+
+`menu`, `help`, `ping`, `info`, `uid`, `math`, `uptime`, `check`, `checkrent`, `bot`, `hi`, `choose`
+
+### Tài chính / game
+
+`balance`, `daily`, `pay`, `vay`, `work`, `cave`, `tx`, `roll`
+
+### Media / nội dung
+
+`sing`, `video`, `pinterest`, `vd`, `gái`, `dhbc`, `dich`, `ai`
+
+### Quản trị nhóm
+
+`add`, `del`, `qtv`, `qtvonly`, `rename`, `autosend`, `setmoney`, `setunsend`, `chuiadmin`, `chuilientuc`, `chuidenchet`, `rentadd`
+
+### Hệ thống / admin
+
+`load`, `reset`, `db`, `ban`, `unban`, `admin`, `note`
+
 ## Scripts npm
 
 - `npm start`: chạy bot.
-- `npm run backup:data`: tạo backup dữ liệu ngay.
-- `npm run restore:data -- <args>`: restore từ snapshot.
+- `npm run backup:data`: backup dữ liệu ngay.
+- `npm run restore:data -- <args>`: restore snapshot.
 - `npm run test:smoke`: test smoke runtime.
 - `npm run test:all`: test syntax/load/contract/smoke.
 
-## Quản lý backup/restore
+## Backup và Restore
 
 Tạo backup:
 
@@ -158,12 +205,12 @@ node scripts/restore-backup.js daily 2026-03-17
 ├─ commands/           # Command ESM
 ├─ services/bot/       # Runtime + event pipeline
 ├─ utils/              # Helper, bridge, legacy core commands
-├─ scripts/            # Backup/restore/test scripts
+├─ scripts/            # Backup/restore/test
 ├─ data/               # Runtime data (ignored trên git)
 ├─ index.js            # Entry point
-├─ config.js           # Prefix + config bot role
+├─ config.js           # Prefix + role config
 ├─ db.js               # SQLite + JSON mirror
-└─ interactionDb.js    # DB tương tác nhóm
+└─ interactionDb.js    # Tương tác nhóm
 ```
 
 ## Bảo mật và chia sẻ mã nguồn
@@ -176,20 +223,16 @@ Không commit dữ liệu nhạy cảm:
 - `data/backups/`
 - `e2ee_device.json`
 
-Khi chia sẻ "vỏ sạch", xem tài liệu:
+Tài liệu share vỏ sạch:
 
 - [HUONG_DAN_SHARE_VO_SACH.md](./HUONG_DAN_SHARE_VO_SACH.md)
 
-## Lỗi thường gặp
+## Changelog và release
 
-- `Không tìm thấy file cookies`
-  - Tạo `data/cookies.json` đúng định dạng.
-
-- `cookies thiếu trường bắt buộc`
-  - Kiểm tra lại JSON cookie (`c_user`, `xs`).
-
-- Lỗi auth (`redirected to login.php`, `access token is no longer valid`)
-  - Cookie đã hết hạn, cần thay cookie mới.
+- Changelog chi tiết: [CHANGELOG.md](./CHANGELOG.md)
+- Gợi ý release:
+  - `git tag v1.0.0`
+  - `git push origin v1.0.0`
 
 ## Nguồn tham khảo
 
